@@ -46,21 +46,27 @@ class ClientChannel(Channel):
                 self.vel_y = future_y
         
         if controls['turning'] == 1:
-            self.angle += self.turn_rate
+            self.vel_angle = self.turn_rate
         
         elif controls['turning'] == 2:
-            self.angle -= self.turn_rate
-            if self.angle < 0:
-                self.angle += 360
+            self.vel_angle = self.turn_rate * -1
         
+        # Update stats
         self.pos_x += self.vel_x / fps
         self.pos_y += self.vel_y / fps
+        self.angle += self.vel_angle / fps
+        if self.angle < 0:
+            self.angle += 360
 
         data = {
             'player_id': self.player_id,
+            'type': 'player',
             'pos_x': self.pos_x,
             'pos_y': self.pos_y,
             'angle': self.angle,
+            'vel_x': self.vel_x,
+            'vel_y': self.vel_y,
+            'vel_angle': self.vel_angle, # Turning "velocity"
         }
         return data
     
