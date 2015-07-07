@@ -7,38 +7,81 @@ from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.properties import NumericProperty, StringProperty
 
-FPS = 30
+from PodSixNet.Connection import connection
+from PodSixNet.Connection import ConnectionListener
 
-class DogfightGame(Widget):
+from time import time
+
+FPS = 30
+DEBUG = False
+
+class DogfightGame(Widget, ConnectionListener):
     def __init__(self, *kargs, **kwargs):
         Widget.__init__(self, *kargs, **kwargs)
+        
+        self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
+        self._keyboard.bind(on_key_down = self._on_keyboard_down)
+        self._keyboard.bind(on_key_up = self._on_keyboard_up)
+        
+        self.controls = {
+            'thrust': 0,
+            'turning': 0,
+            'attack': 0,
+        }
+        self.old_controls = dict(self.controls)
         
         self.space = FloatLayout()
         self.objects = {}
         
         data = {
-            'player_id': 0,
+            'object_id': 0,
             'type': 'player',
             'pos_x': 100,
             'pos_y': 100,
             'angle': 50,
             'vel_x': 10,
-            'vel_y': 0,
+            'vel_y': 10,
             'vel_angle': 120,
         }
-        self.add_object(data)
+        if DEBUG:
+            self.add_object(data)
         
         self.add_widget(self.space)
     
+    # Network Logic
+    def send_action(self, action):
+        self.Send(action)
+        
+    def Network_update(self, data):
+        for u in data['updates']:
+            self.update_object(u)
+    
+    def Network(self, data):
+        if DEBUG:
+            print 'Game Window:', data
+    
+    # Game Logic
     def update(self, fps):
+        # Send any new controls to the server.
+        self.update_controls()
+        self.Pump()
+        
         objects = self.objects
         for i in objects:
             obj = objects[i]
             obj.update(fps)
     
+    def update_object(self, data):
+        object_id = data['object_id']
+        if object_id not in self.objects:
+            self.add_object(data)
+            return
+        
+        self.objects[object_id].update_data(data)
+    
     def add_object(self, data):
         "Add new object to the screen."
-        player_id = data['player_id']
+        object_id = data['object_id']
         
         if data['type'] == 'player':
             image = 'images/player.png'
@@ -52,7 +95,7 @@ class DogfightGame(Widget):
         new_object = GenericObject(source=image)
         new_object.update_data(data)
         
-        self.objects[player_id] = new_object
+        self.objects[object_id] = new_object
         self.space.add_widget(new_object)
     
     def remove_object(self, object_id):
@@ -63,6 +106,49 @@ class DogfightGame(Widget):
             del self.objects[object_id]
             del obj
 
+    # Game Controls
+    def update_controls(self):
+        
+        if self.controls != self.old_controls:
+            self.old_controls = dict(self.controls)
+            action = {
+                'action': 'controls',
+                'controls': self.old_controls,
+            }
+            self.send_action(action)
+        
+    def _keyboard_closed(self):
+        self._keyboard.unbind(on_key_down = self._on_keyboard_down)
+        self._keyboard = None
+
+    def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
+        key = keycode[1]
+        if key == 'w':
+            self.controls['thrust'] = 1
+        
+        if key == 'a':
+            self.controls['turning'] = 1
+        
+        elif key == 'd':
+            self.controls['turning'] = 2
+        
+        if key == 'spacebar':
+            self.controls['attack'] = 1
+
+    def _on_keyboard_up(self, keyboard, keycode):
+        key = keycode[1]
+        if DEBUG:
+            print key
+        
+        if key == 'w':
+            self.controls['thrust'] = 0
+        
+        if key == 'a' or key == 'd':
+            self.controls['turning'] = 0
+        
+        if key == 'spacebar':
+            self.controls['attack'] = 0
+        
 
 class GenericObject(Image):
     vel_x = NumericProperty(0)
@@ -72,16 +158,16 @@ class GenericObject(Image):
     source = StringProperty('images/player.png')
     
     def update(self, fps):
-        pos = self.pos
+        pos = self.center
         angle = self.angle
         
         # Create updated values
-        new_x = pos[0] + (self.vel_x / fps)
-        new_y = pos[1] + (self.vel_y / fps)
-        new_angle = angle + (self.vel_angle / fps)
+        new_x = pos[0] + (self.vel_x * fps)
+        new_y = pos[1] + (self.vel_y * fps)
+        new_angle = angle + (self.vel_angle * fps)
         
         # Update the variables
-        self.pos = (new_x, new_y)
+        self.center = (new_x, new_y)
         self.angle = new_angle
     
     def update_data(self, data):
@@ -93,11 +179,50 @@ class GenericObject(Image):
         self.vel_angle = data['vel_angle']
 
 
-class DogfightApp(App):
+class DogfightApp(App, ConnectionListener):
+    
+    def __init__(self, *kargs, **kwargs):
+        App.__init__(self, *kargs, **kwargs)
+        self.connected = True
+        self.Connect(('127.0.0.1', 34002))
+        
+        self.count = 0
+        self.time = 0
     
     def update(self, data):
-        fps = FPS
+        
+        # How many times update() is truly called per second.
+        if self.time != round(time()):
+            if DEBUG:
+                print self.count
+            
+            self.count = 0
+            self.time = round(time())
+        
+        self.count += 1
+        
+        fps = data
+        
+        if self.connected:
+            connection.Pump()
+            self.Pump()
+        
         self.game.update(fps)
+    
+    def Network_connected(self, data):
+        print 'Connected to the server!'
+        self.connected = True
+    
+    def Network_disconnected(self, data):
+        print 'Disconnected from the server!'
+        self.connected = False
+    
+    def Network_error(self, data):
+        print data
+    
+    def Network(self, data):
+        if DEBUG:
+            print 'Game App:', data
     
     def build(self):
         Clock.schedule_interval(self.update, 1.0 / FPS)

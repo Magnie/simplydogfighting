@@ -5,28 +5,35 @@ from PodSixNet.Connection import ConnectionListener, connection
 from time import time, sleep
 from math import cos, sin, radians
 
-FPS = 30.0
+FPS = 30
+DEBUG = False
 
 class ClientChannel(Channel):
     
     def __init__(self, *args, **kwargs):
-        Client.__init__(self, *args, **kwargs)
+        Channel.__init__(self, *args, **kwargs)
         # Defaults
         self.pos_x = 0
         self.pos_y = 0
         self.angle = 0
         self.vel_x = 0
         self.vel_y = 0
+        self.vel_angle = 0
+        
+        
+        self.old_angle = -1
+        self.max_x = 0
+        self.max_y = 0
         
         self.turn_rate = 180 # Degrees per second
-        self.accel = 5
-        self.max_speed = 20
+        self.accel = 25
+        self.max_speed = 50
         
         self.health = 10
         
         self.collide_size = 10 # In pixels
         
-        self.player_id = -1
+        self.object_id = -1
         self.name = 'Observer'
         self.controls = {
             'thrust': 0,
@@ -37,13 +44,32 @@ class ClientChannel(Channel):
     def update(self, fps):
         "Update ship position and direction"
         controls = self.controls
-        if controls['thrust'] == 1:
-            future_x = self.vel_x + cos(radians(self.angle)) * self.accel
-            future_y = self.vel_y + sin(radians(self.angle)) * self.accel
+        accel = self.accel * fps
+        angle = self.angle + 90 # 0 is up.
+        
+        if self.old_angle != angle:
+            self.old_angle = angle
+            temp_vx = 0
+            temp_vy = 0
+            while abs(temp_vx) + abs(temp_vy) < self.max_speed:
+                temp_vx += cos(radians(angle)) * accel
+                temp_vy += sin(radians(angle)) * accel
             
-            if (future_x + future_y < self.max_speed):
-                self.vel_x = future_x
+            self.max_x = temp_vx
+            self.max_y = temp_vy
+        
+        max_x = self.max_x
+        max_y = self.max_y
+        
+        if controls['thrust'] == 1:
+            future_x = self.vel_x + cos(radians(angle)) * accel
+            future_y = self.vel_y + sin(radians(angle)) * accel
+            
+            if (future_y < max_y) if max_y > 0 else (future_y > max_y):
                 self.vel_y = future_y
+            
+            if (future_x < max_x) if max_x > 0 else (future_x > max_x):
+                self.vel_x = future_x
         
         if controls['turning'] == 1:
             self.vel_angle = self.turn_rate
@@ -51,15 +77,18 @@ class ClientChannel(Channel):
         elif controls['turning'] == 2:
             self.vel_angle = self.turn_rate * -1
         
+        else:
+            self.vel_angle = 0
+        
         # Update stats
-        self.pos_x += self.vel_x / fps
-        self.pos_y += self.vel_y / fps
-        self.angle += self.vel_angle / fps
+        self.pos_x += self.vel_x * fps
+        self.pos_y += self.vel_y * fps
+        self.angle += self.vel_angle * fps
         if self.angle < 0:
             self.angle += 360
 
         data = {
-            'player_id': self.player_id,
+            'object_id': self.object_id,
             'type': 'player',
             'pos_x': self.pos_x,
             'pos_y': self.pos_y,
@@ -70,11 +99,16 @@ class ClientChannel(Channel):
         }
         return data
     
-    def new_id(self, player_id):
-        self.player_id = player_id
+    def new_id(self, object_id):
+        self.object_id = object_id
+    
+    def Close(self):
+        "Called when a player disconnects."
+        self._server.Disconnected(self)
 
     def Network(self, data):
-        print data
+        if DEBUG:
+            print data
 
     def Network_name(self, data):
         if 'name' in data:
@@ -116,32 +150,47 @@ class DFServer(Server):
             updates.append(c.update(fps))
         
         # Send the updates to everyone.
+        action = {
+            'action': 'update',
+            'updates': updates,
+        }
+        self.send_all(action)
+    
+    def get_id(self):
+        self.id_inc += 1
+        return self.id_inc
+    
+    def send_all(self, action):
+        clients = self.clients
         for c in clients:
-            action = {
-                'action': 'update',
-                'updates': updates,
-            }
             c.Send(action)
 
     def Connected(self, channel, addr):
-        self.id_inc += 1
-        channel.new_id(self.id_inc)
+        channel.new_id(self.get_id())
         self.clients.append(channel)
         print 'new connection:', channel, addr
+    
+    def Disconnected(self, player_obj):
+        action = {
+            'action': 'delete',
+            'object_id': player_obj.object_id,
+        }
+        self.send_all(action)
+        self.clients.remove(player_obj)
 
 
 running = True
-server = DFServer()
+server = DFServer(localaddr=('127.0.0.1', 34002))
 dyn_fps = FPS
+real_fps = lambda: 1.0 / dyn_fps
 while running:
     current_time = time()
     # Tick Update
-    connection.Pump()
     server.Pump()
-    server.tick(dyn_fps)
+    server.tick(real_fps())
     
     time_taken = time() - current_time
-    time_left = (1.0 / dyn_fps) - time_taken
+    time_left = real_fps() - time_taken
     
     # If lagging behind, adjust FPS to handle the load.
     if time_left < 0:
@@ -149,6 +198,7 @@ while running:
         dyn_fps -= 1
     
     else:
-        dyn_fps += 0.5
+        if dyn_fps < FPS:
+            dyn_fps += 0.5
 
     sleep(time_left)
