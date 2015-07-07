@@ -15,4 +15,4 @@ kivy main.py
 ```
 
 # Can I use the code?
-You may use the code in any way as long as you are not using it commercially. If you wish to use it commercially, then please contact me personally for permission.
+You may use the code in any way as long as you are not using it commercially. If you wish to use it commercially, then please contact me personally for permission. However the libraries being used are under their own licenses (Kivy and PodSixNet).
