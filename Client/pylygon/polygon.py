@@ -15,7 +15,6 @@ from __future__ import division
 from operator import mul
 
 from numpy import array, cos, dot, fabs, lexsort, pi, sin, sqrt, vstack
-from pygame import Rect
 
 from .convexhull import convexhull
 

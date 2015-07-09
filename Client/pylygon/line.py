@@ -13,8 +13,6 @@ line segment object
 
 from math import sqrt
 
-from pygame import Rect
-
 
 
 
