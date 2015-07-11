@@ -1,6 +1,7 @@
 from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.uix.image import Image
+from kivy.uix.progressbar import ProgressBar
 from kivy.uix.floatlayout import FloatLayout
 
 from kivy.core.window import Window
@@ -45,7 +46,7 @@ class DogfightGame(Widget, ConnectionListener):
         }
         if DEBUG:
             self.add_object(data)
-        
+            
         self.add_widget(self.space)
     
     # Network Logic
@@ -55,6 +56,9 @@ class DogfightGame(Widget, ConnectionListener):
     def Network_update(self, data):
         for u in data['updates']:
             self.update_object(u)
+    
+    def Network_delete(self, data):
+        self.remove_object(data['object_id'])
     
     def Network(self, data):
         if DEBUG:
@@ -72,6 +76,9 @@ class DogfightGame(Widget, ConnectionListener):
             obj.update(fps)
     
     def update_object(self, data):
+        if not data:
+            return
+            
         object_id = data['object_id']
         if object_id not in self.objects:
             self.add_object(data)
@@ -101,7 +108,7 @@ class DogfightGame(Widget, ConnectionListener):
     def remove_object(self, object_id):
         if object_id in self.objects:
             obj = self.objects[object_id]
-            self.remove_widget(obj)
+            self.space.remove_widget(obj)
         
             del self.objects[object_id]
             del obj

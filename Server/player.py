@@ -8,6 +8,7 @@ class Player(Entity):
     def __init__(self, functions):
         Entity.__init__(self, functions)
         self.health = 10
+        self.type = 'player'
         
         self.live_weapons = []
         self.weapon_cooldown = 0.5
@@ -48,9 +49,17 @@ class Player(Entity):
         self.collide_size = size
         
     def update(self, delta_time):
-        if self.cooldown == 0 and self.controls['attack']:
+        if self.cooldown <= 0 and self.controls['attack']:
             self.cooldown = self.weapon_cooldown
-            weapon = Weapon()
-            weapon.max_speed = 100
+            weapon = Weapon(self.functions)
+            weapon.pos_x = self.pos_x
+            weapon.pos_y = self.pos_y
+            weapon.angle = self.angle
+            weapon.max_speed = 100 + self.speed
+            weapon.controls['thrust'] = 1
+            self.functions['add_entity'](weapon)
+        
+        else:
+            self.cooldown -= 0.5 * delta_time
             
         return Entity.update(self, delta_time)

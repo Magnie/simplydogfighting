@@ -21,8 +21,10 @@ class Entity(object):
         self.turn_rate = 180 # Degrees per second
         self.accel = 25
         self.max_speed = 50
+        self.speed = 0
         
         self.collide_size = 10 # In pixels
+        self.type = 'entity'
         
         self.object_id = -1
         if 'new_id' in self.functions:
@@ -79,10 +81,12 @@ class Entity(object):
         self.angle += self.vel_angle * delta_time
         if self.angle < 0:
             self.angle += 360
+        
+        self.speed = abs(self.vel_x) + abs(self.vel_y)
 
         data = {
             'object_id': self.object_id,
-            'type': 'player',
+            'type': self.type,
             'pos_x': self.pos_x,
             'pos_y': self.pos_y,
             'angle': self.angle,
