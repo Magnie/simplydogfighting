@@ -22,6 +22,9 @@ class Weapon(Entity):
             'collide_size': self.collide_size,
         }
         return data
+        
+    def hit(self):
+        self.life_time = 0
     
     def new_collide_size(self, size):
         "Set new collision box size."
@@ -29,7 +32,7 @@ class Weapon(Entity):
         
     def update(self, delta_time):
         if self.life_time <= 0:
-            print 'died'
+            print self, 'died'
             self.functions['remove_entity'](self)
             return
         

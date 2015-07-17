@@ -1,21 +1,11 @@
 # Copyright (c) 2011, Chandler Armstrong (omni dot armstrong at gmail dot com)
 # see LICENSE.txt for details
 
-
-
-
 """
 line segment object
 """
 
-
-
-
 from math import sqrt
-
-from pygame import Rect
-
-
 
 
 class Line(object):

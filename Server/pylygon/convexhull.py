@@ -3,23 +3,11 @@
 # <http://tixxit.net/2010/03/graham-scan/> provides the basis for the code in
 # this file.  the code at that address contains no copyright notice.
 
-
-
-
 """find the convex hull of a set of points using graham scan"""
-
-
-
 
 from numpy import array, in1d, lexsort
 
-
-
-
 TURN_LEFT, TURN_RIGHT, TURN_NONE = (1, -1, 0)
-
-
-
 
 def _turn(i, j, k):
     global P

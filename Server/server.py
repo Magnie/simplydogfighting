@@ -19,7 +19,7 @@ class ClientChannel(Channel):
             'remove_entity': self._server.remove_entity,
         }
         self.player = Player(self.functions)
-        self.functions['add_entity'](self.player)
+        self.functions['add_entity'](self.player, etype='collided')
     
     def update(self, delta_time):
         return self.player.update(delta_time)
@@ -63,10 +63,29 @@ class DFServer(Server):
         Server.__init__(self, *args, **kwargs)
         self.clients = []
         self.entities = []
+        
+        # Entities that can be hit.
+        self.collided = []
+        
+        # Entites that hit.
+        self.colliders = []
+        
         self.id_inc = 0
     
     def tick(self, fps):
         entities = self.entities
+        collided = self.collided
+        colliders = self.colliders
+        
+        # Test collisions
+        for projectile in colliders:
+            polygon = projectile.polygon
+            for entity in collided:
+                result = entity.test_collision(polygon)
+                if result:
+                    entity.hit_by(projectile)
+                    projectile.hit()
+                    break
         
         # Update all the players.
         updates = []
@@ -80,8 +99,13 @@ class DFServer(Server):
         }
         self.send_all(action)
     
-    def add_entity(self, entity):
+    def add_entity(self, entity, etype=''):
         self.entities.append(entity)
+        if etype == 'collider':
+            self.colliders.append(entity)
+        
+        elif etype == 'collided':
+            self.collided.append(entity)
     
     def remove_entity(self, entity):
         action = {
@@ -89,7 +113,14 @@ class DFServer(Server):
             'object_id': entity.object_id,
         }
         self.send_all(action)
-        self.entities.remove(entity)
+        if entity in self.entities:
+            self.entities.remove(entity)
+        
+        if entity in self.colliders:
+            self.colliders.remove(entity)
+        
+        if entity in self.collided:
+            self.collided.remove(entity)
     
     def get_id(self):
         self.id_inc += 1
@@ -111,9 +142,12 @@ class DFServer(Server):
 running = True
 server = DFServer(localaddr=('127.0.0.1', 34002))
 dyn_fps = FPS
-real_fps = lambda: 1.0 / dyn_fps
-frame_time = real_fps()
+real_fps = lambda x: 1.0 / x
+frame_time = real_fps(dyn_fps)
 while running:
+    if (len(server.clients) == 0):
+        dyn_fps = 10
+    
     current_time = time()
     # Tick Update
     server.Pump()
@@ -122,17 +156,18 @@ while running:
     #sleep(0.2) # 200MS! Ridiculous!
     
     time_taken = time() - current_time
-    time_left = real_fps() - time_taken
+    time_left = real_fps(dyn_fps) - time_taken
     
     # If lagging behind, adjust FPS to handle the load.
     if time_left < 0:
         dyn_fps -= 0.5
-        frame_time = real_fps() + abs(time_left)
+        frame_time = real_fps(dyn_fps) + abs(time_left)
         print 'Warning, lagging:', frame_time
         continue
     
     else:
         if dyn_fps < FPS:
             dyn_fps += 0.5
+            frame_time = real_fps(dyn_fps)
 
     sleep(time_left)

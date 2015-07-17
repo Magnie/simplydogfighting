@@ -1,5 +1,5 @@
 from math import cos, sin, radians
-
+from pylygon.polygon import Polygon
 
 class Entity(object):
     
@@ -23,7 +23,17 @@ class Entity(object):
         self.max_speed = 50
         self.speed = 0
         
-        self.collide_size = 10 # In pixels
+        self.health = 10
+        
+        collide_size = 10 # In pixels
+        self.collide_size = collide_size
+        new_box = []
+        new_box.append((self.pos_y + collide_size, self.pos_x - collide_size))
+        new_box.append((self.pos_y + collide_size, self.pos_x + collide_size))
+        new_box.append((self.pos_y - collide_size, self.pos_x + collide_size))
+        new_box.append((self.pos_y - collide_size, self.pos_x - collide_size))
+        self.polygon = Polygon(new_box)
+        
         self.type = 'entity'
         
         self.object_id = -1
@@ -35,6 +45,29 @@ class Entity(object):
             'thrust': 0,
             'turning': 0,
         }
+    
+    def hit_by(self, other):
+        "What to do when hit by another object"
+        print self, 'hit'
+    
+    def test_collision(self, other):
+        "Check if a collision with another polygon exists."
+        distance = self.polygon.distance(other)
+        distance = abs(distance[0]) + abs(distance[1])
+        if (distance) < (self.collide_size):
+            collision = self.polygon.collidepoly(other)
+            if collision.any():
+                return True
+        return False
+    
+    def move(self, x, y):
+        "Moves the object and it's collision layer"
+        self.polygon.C = x, y
+        self.pos_x = x
+        self.pos_y = y
+    
+    def rotate(self, angle):
+        pass
         
     def update(self, delta_time):
         "Update ship position and direction"
@@ -57,6 +90,8 @@ class Entity(object):
         max_y = self.max_y
         
         if controls['thrust'] == 1:
+            # Calculate what the future velocities will be. If they are greater
+            # than the max speeds calculated earlier, ignore it.
             future_x = self.vel_x + cos(radians(angle)) * accel
             future_y = self.vel_y + sin(radians(angle)) * accel
             
@@ -76,8 +111,10 @@ class Entity(object):
             self.vel_angle = 0
         
         # Update stats
-        self.pos_x += self.vel_x * delta_time
-        self.pos_y += self.vel_y * delta_time
+        new_x = self.pos_x + (self.vel_x * delta_time)
+        new_y = self.pos_y + (self.vel_y * delta_time)
+        self.move(new_x, new_y)
+        
         self.angle += self.vel_angle * delta_time
         if self.angle < 0:
             self.angle += 360

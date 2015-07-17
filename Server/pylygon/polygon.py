@@ -1,26 +1,16 @@
 # Copyright (c) 2011, Chandler Armstrong (omni dot armstrong at gmail dot com)
 # see LICENSE.txt for details
 
-
-
-
 """
 polygon object
 """
-
-
-
 
 from __future__ import division
 from operator import mul
 
 from numpy import array, cos, dot, fabs, lexsort, pi, sin, sqrt, vstack
-from pygame import Rect
 
 from .convexhull import convexhull
-
-
-
 
 # error tolerances
 _MACHEPS = pow(2, -24)
@@ -299,7 +289,8 @@ class Polygon(object):
             other_projection = other.project(axis)
             # if self and other do not intersect on any axis, they do not
             # intersect in space
-            if not _intersect(self_projection, other_projection): return False
+            if not _intersect(self_projection, other_projection):
+                return array([])
             # find the overlapping portion of the projections
             projection = self_projection[1] - other_projection[0]
             projections.append((axis[0] * projection, axis[1] * projection))
