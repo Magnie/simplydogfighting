@@ -33,6 +33,7 @@ class DogfightGame(Widget, ConnectionListener):
         
         self.space = FloatLayout()
         self.objects = {}
+        self.player_id = None
         
         data = {
             'object_id': 0,
@@ -57,6 +58,11 @@ class DogfightGame(Widget, ConnectionListener):
         for u in data['updates']:
             self.update_object(u)
     
+    def Network_player(self, data):
+        if 'info' in data:
+            if 'id' in data['info']:
+                self.player_id = data['info']['id']
+    
     def Network_delete(self, data):
         self.remove_object(data['object_id'])
     
@@ -67,6 +73,7 @@ class DogfightGame(Widget, ConnectionListener):
     # Game Logic
     def update(self, fps):
         # Send any new controls to the server.
+        self.send_action({'action': 'player'})
         self.update_controls()
         self.Pump()
         
@@ -85,6 +92,9 @@ class DogfightGame(Widget, ConnectionListener):
             return
         
         self.objects[object_id].update_data(data)
+        if self.player_id and self.player_id != object_id:
+            player = self.objects[self.player_id].true_pos
+            self.objects[object_id].new_player(player)
     
     def add_object(self, data):
         "Add new object to the screen."
@@ -161,11 +171,13 @@ class GenericObject(Image):
     vel_x = NumericProperty(0)
     vel_y = NumericProperty(0)
     vel_angle = NumericProperty(0)
+    true_pos = (0, 0)
+    player = None
     angle = NumericProperty(0)
     source = StringProperty('images/player.png')
     
     def update(self, fps):
-        pos = self.center
+        pos = self.true_pos
         angle = self.angle
         
         # Create updated values
@@ -174,16 +186,33 @@ class GenericObject(Image):
         new_angle = angle + (self.vel_angle * fps)
         
         # Update the variables
-        self.center = (new_x, new_y)
+        self.true_pos = (new_x, new_y)
+        if self.player:
+            new_x = (self.true_pos[0] - self.player[0]) + (Window.width / 2.0)
+            new_y = (self.true_pos[1] - self.player[1]) + (Window.height / 2.0)
+            self.center = (new_x, new_y)
+        else:
+            self.center = (Window.width / 2.0, Window.height / 2.0)
+            
         self.angle = new_angle
     
     def update_data(self, data):
-        self.pos = data['pos_x'], data['pos_y']
+        self.true_pos = (data['pos_x'], data['pos_y'])
+        if self.player:
+            new_x = (self.true_pos[0] - self.player[0]) + (Window.width / 2.0)
+            new_y = (self.true_pos[1] - self.player[1]) + (Window.height / 2.0)
+            self.center = (new_x, new_y)
+        else:
+            self.center = (Window.width / 2.0, Window.height / 2.0)
+            
         self.angle = data['angle']
         
         self.vel_x = data['vel_x']
         self.vel_y = data['vel_y']
         self.vel_angle = data['vel_angle']
+    
+    def new_player(self, entity):
+        self.player = entity
 
 
 class DogfightApp(App, ConnectionListener):
