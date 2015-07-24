@@ -7,7 +7,8 @@ class Player(Entity):
     
     def __init__(self, functions):
         Entity.__init__(self, functions)
-        self.health = 10
+        self.max_health = 10
+        self.health = self.max_health
         self.ignore_list = []
         
         self.type = 'player'
@@ -28,6 +29,7 @@ class Player(Entity):
         data = {
             'id': self.object_id,
             'health': self.health,
+            'max_health': self.max_health,
             'turn_rate': self.turn_rate,
             'accel': self.accel,
             'max_speed': self.max_speed,
@@ -45,6 +47,13 @@ class Player(Entity):
         
         if 'attack' in controls:
             self.controls['attack'] = controls['attack']
+    
+    def hit_by(self, other):
+        "Take damage from object."
+        self.health -= other.damage
+        if self.health <= 0:
+            self.health = self.max_health
+            self.move(0, 0)
     
     def test_collision(self, other):
         "Check if a collision with another polygon exists."

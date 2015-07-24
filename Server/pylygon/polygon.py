@@ -212,15 +212,8 @@ class Polygon(object):
         return array([p + q for p in P for q in Q])
 
 
-    def __neg__(self): return Polygon(-self.P)
-
-
-    def get_rect(self):
-        """return the AABB, as a pygame rect, of the polygon"""
-        X, Y = _unzip(self.P)
-        x, y = min(X), min(Y)
-        w, h = max(X) - x, max(Y) - y
-        return Rect(x, y, w, h)
+    def __neg__(self):
+            return Polygon(-self.P)
 
 
     def move(self, x, y):

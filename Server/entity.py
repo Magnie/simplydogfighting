@@ -51,7 +51,7 @@ class Entity(object):
         print self, 'hit'
     
     def test_collision(self, other):
-        "Check if a collision with another polygon exists."
+        "Check if a collision with another polygon exists"
         distance = self.polygon.distance(other)
         distance = abs(distance[0]) + abs(distance[1])
         if (distance) < (self.collide_size):
@@ -67,7 +67,9 @@ class Entity(object):
         self.pos_y = y
     
     def rotate(self, angle):
-        pass
+        "Rotate the entity and the collision box"
+        self.angle = angle
+        self.polygon.rotate(radians(angle))
         
     def update(self, delta_time):
         "Update ship position and direction"
@@ -115,9 +117,10 @@ class Entity(object):
         new_y = self.pos_y + (self.vel_y * delta_time)
         self.move(new_x, new_y)
         
-        self.angle += self.vel_angle * delta_time
-        if self.angle < 0:
-            self.angle += 360
+        new_angle = self.angle + (self.vel_angle * delta_time)
+        if new_angle < 0:
+            new_angle += 360
+        self.rotate(new_angle)
         
         self.speed = abs(self.vel_x) + abs(self.vel_y)
 
