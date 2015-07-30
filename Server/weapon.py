@@ -24,6 +24,7 @@ class Weapon(Entity):
         return data
         
     def hit(self):
+        "Set life time to zero so it doesn't continue to fly."
         self.life_time = 0
     
     def new_collide_size(self, size):
@@ -31,12 +32,14 @@ class Weapon(Entity):
         self.collide_size = size
         
     def update(self, delta_time):
+        "Update the movement and life time of the weapon."
         if self.life_time <= 0:
-            print self, 'died'
             self.functions['remove_entity'](self)
             return
         
         self.life_time -= delta_time
         self.vel_x = self.max_x
         self.vel_y = self.max_y
+        
+        # Default movement updates.
         return Entity.update(self, delta_time)

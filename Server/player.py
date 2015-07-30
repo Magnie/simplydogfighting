@@ -24,6 +24,17 @@ class Player(Entity):
             'attack': 0,
         }
     
+    def reset_player(self):
+        "Reset the player entity to all default values."
+        self.live_weapons = []
+        self.weapon_cooldown = 0.5
+        self.cooldown = self.weapon_cooldown
+        self.vel_x = 0
+        self.vel_y = 0
+        self.vel_angle = 0
+        self.health = self.max_health
+        self.move(0, 0)
+    
     def get_info(self):
         "Return information regarding the player."
         data = {
@@ -52,25 +63,25 @@ class Player(Entity):
         "Take damage from object."
         self.health -= other.damage
         if self.health <= 0:
-            self.health = self.max_health
-            self.move(0, 0)
+            # Reset location to the center of the system.
+            self.reset_player()
     
     def test_collision(self, other):
         "Check if a collision with another polygon exists."
+        
+        # If in the ignore list, then don't test for collisions.
         if other in self.ignore_list:
             return False
-            
+        
+        # First check distance
         distance = self.polygon.distance(other)
         distance = abs(distance[0]) + abs(distance[1])
         if (distance) < (self.collide_size):
+            # Then do a more detailed test
             collision = self.polygon.collidepoly(other)
             if collision.any():
                 return True
         return False
-    
-    def new_collide_size(self, size):
-        "Set new collision box size."
-        self.collide_size = size
         
     def update(self, delta_time):
         if self.cooldown <= 0 and self.controls['attack']:

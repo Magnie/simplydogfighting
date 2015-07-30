@@ -65,7 +65,6 @@ class DogfightGame(Widget, ConnectionListener):
         "Response from server giving player data"
         if 'info' in data:
             if 'id' in data['info']:
-                print data
                 self.player_id = data['info']['id']
                 
                 self.health.max = data['info']['max_health']
@@ -122,12 +121,12 @@ class DogfightGame(Widget, ConnectionListener):
             image = 'images/player.png'
             
         elif data['type'] == 'bullet':
-            image = 'images/player.png'
+            image = 'images/weapon.png'
         
         elif data['type'] == 'planet':
-            image = 'images/player.png'
+            image = 'images/planet.png'
             
-        else:
+        else: # TODO: Create generic object image.
             image = 'images/player.png'
         
         # Create the new object and update it with the data.
@@ -262,7 +261,7 @@ class DogfightApp(App, ConnectionListener):
         self.time = 0
     
     def update(self, data):
-        
+        "Check for new updates from server and tell the game to update."
         # How many times update() is truly called per second.
         if self.time != round(time()):
             if DEBUG:

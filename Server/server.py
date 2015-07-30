@@ -5,19 +5,18 @@ from PodSixNet.Connection import ConnectionListener, connection
 from time import time, sleep
 
 from player import Player
+from entity import Entity
 
 FPS = 30
 DEBUG = False
+
+SYSTEM_SIZE = 1000
 
 class ClientChannel(Channel):
     
     def __init__(self, *args, **kwargs):
         Channel.__init__(self, *args, **kwargs)
-        self.functions = {
-            'new_id': self._server.get_id,
-            'add_entity': self._server.add_entity,
-            'remove_entity': self._server.remove_entity,
-        }
+        self.functions = self._server.functions
         self.player = Player(self.functions)
         self.functions['add_entity'](self.player, etype='collided')
     
@@ -46,8 +45,33 @@ class ClientChannel(Channel):
     
     def Network_collide(self, data):
         if 'size' in data:
-            if type(data['size'], int) and data['size'] > 9:
-                self.new_collide_size(data['size'])
+            size = data['size']
+            
+            # Generic Box
+            if type(size, int) and size >= 10:
+                self.new_collide_size(size)
+            
+            # TODO: Support for more intricate polygons
+            if type(size, list) and len(size) >= 3:
+                def distance((ax, ay), (bx, by)):
+                    return ((ax ** 2) - (bx ** 2)) + ((ay ** 2) - (by ** 2))
+                
+                # Make sure the size of the polygon is at least the
+                # minimum.
+                perimeter = 0
+                last_i = None
+                length = 0
+                for i in size:
+                    if not last_i:
+                        length = 0
+                    else:
+                        length = distance(i, last_i)
+                        
+                    perimeter += length
+                    last_i = i
+                
+                if perimeter > 30:
+                    self.new_polygon(size)
     
     def Network_controls(self, data):
         if 'controls' in data:
@@ -61,6 +85,8 @@ class DFServer(Server):
     
     def __init__(self, *args, **kwargs):
         Server.__init__(self, *args, **kwargs)
+        self.id_inc = 0
+        
         self.clients = []
         self.entities = []
         
@@ -70,7 +96,19 @@ class DFServer(Server):
         # Entites that hit.
         self.colliders = []
         
-        self.id_inc = 0
+        # Static Objects in space.
+        # Functions for the entities.
+        self.functions = {
+            'new_id': self.get_id,
+            'add_entity': self.add_entity,
+            'remove_entity': self.remove_entity,
+            'system_size': SYSTEM_SIZE,
+        }
+        
+        # A Planet to respawn at:
+        planet = Entity(self.functions)
+        planet.type = 'planet'
+        self.entities.append(planet)
     
     def tick(self, fps):
         entities = self.entities

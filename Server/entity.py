@@ -5,6 +5,7 @@ class Entity(object):
     
     def __init__(self, functions):
         self.functions = functions
+        self.system_size = self.functions['system_size']
         # Defaults
         self.pos_x = 0
         self.pos_y = 0
@@ -20,19 +21,14 @@ class Entity(object):
         
         self.turn_rate = 180 # Degrees per second
         self.accel = 25
-        self.max_speed = 50
+        self.max_speed = 75
         self.speed = 0
         
         self.health = 10
         
         collide_size = 10 # In pixels
-        self.collide_size = collide_size
-        new_box = []
-        new_box.append((self.pos_y + collide_size, self.pos_x - collide_size))
-        new_box.append((self.pos_y + collide_size, self.pos_x + collide_size))
-        new_box.append((self.pos_y - collide_size, self.pos_x + collide_size))
-        new_box.append((self.pos_y - collide_size, self.pos_x - collide_size))
-        self.polygon = Polygon(new_box)
+        self.collide_size = 10
+        self.new_collide_size(self.collide_size)
         
         self.type = 'entity'
         
@@ -45,6 +41,21 @@ class Entity(object):
             'thrust': 0,
             'turning': 0,
         }
+    
+    def new_collide_size(self, collide_size):
+        "Set new collision box size."
+        self.collide_size = size
+        new_box = []
+        new_box.append((self.pos_y + collide_size, self.pos_x - collide_size))
+        new_box.append((self.pos_y + collide_size, self.pos_x + collide_size))
+        new_box.append((self.pos_y - collide_size, self.pos_x + collide_size))
+        new_box.append((self.pos_y - collide_size, self.pos_x - collide_size))
+        self.new_polygon(new_box)
+    
+    def new_polygon(self, poly):
+        "New collision zone for the object."
+        self.polygon = Polygon(poly)
+        self.move(self.pos_x, self.pos_y)
     
     def hit_by(self, other):
         "What to do when hit by another object"
@@ -62,6 +73,21 @@ class Entity(object):
     
     def move(self, x, y):
         "Moves the object and it's collision layer"
+        
+        # If the entity is outside of the system bounds, wrap the
+        # entity to the opposite side.
+        system_wrap = self.system_size * 2
+        if x > self.system_size:
+            x -= system_wrap
+        elif x < (self.system_size * -1):
+            x += system_wrap
+            
+        if y > self.system_size:
+            y -= system_wrap
+        elif y < (self.system_size * -1):
+            y += system_wrap
+        
+        # Set the position
         self.polygon.C = x, y
         self.pos_x = x
         self.pos_y = y
