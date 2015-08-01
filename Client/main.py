@@ -8,6 +8,8 @@ from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.properties import NumericProperty, StringProperty
 
+from starfield import Starfield
+
 from PodSixNet.Connection import connection
 from PodSixNet.Connection import ConnectionListener
 
@@ -92,6 +94,10 @@ class DogfightGame(Widget, ConnectionListener):
         for i in objects:
             obj = objects[i]
             obj.update(fps)
+        
+        if self.player_id:
+            x, y = self.objects[self.player_id].true_pos
+            self.starfield.scroll(x, y, 0)
     
     def update_object(self, data):
         "Update an object based on the data given"
