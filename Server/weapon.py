@@ -26,10 +26,6 @@ class Weapon(Entity):
     def hit(self):
         "Set life time to zero so it doesn't continue to fly."
         self.life_time = 0
-    
-    def new_collide_size(self, size):
-        "Set new collision box size."
-        self.collide_size = size
         
     def update(self, delta_time):
         "Update the movement and life time of the weapon."

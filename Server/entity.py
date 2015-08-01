@@ -26,9 +26,10 @@ class Entity(object):
         
         self.health = 10
         
+        
         collide_size = 10 # In pixels
         self.collide_size = 10
-        self.new_collide_size(self.collide_size)
+        self.new_collide_size(collide_size)
         
         self.type = 'entity'
         
@@ -44,7 +45,7 @@ class Entity(object):
     
     def new_collide_size(self, collide_size):
         "Set new collision box size."
-        self.collide_size = size
+        self.collide_size = collide_size
         new_box = []
         new_box.append((self.pos_y + collide_size, self.pos_x - collide_size))
         new_box.append((self.pos_y + collide_size, self.pos_x + collide_size))
@@ -56,6 +57,7 @@ class Entity(object):
         "New collision zone for the object."
         self.polygon = Polygon(poly)
         self.move(self.pos_x, self.pos_y)
+        print 'step four', self, self.polygon
     
     def hit_by(self, other):
         "What to do when hit by another object"
