@@ -3,6 +3,7 @@ from kivy.uix.widget import Widget
 from kivy.uix.image import Image
 from kivy.uix.progressbar import ProgressBar
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.label import Label
 
 from kivy.core.window import Window
 from kivy.clock import Clock
@@ -18,9 +19,9 @@ from time import time
 FPS = 30
 DEBUG = False
 
-class DogfightGame(Widget, ConnectionListener):
+class DogfightGame(FloatLayout, ConnectionListener):
     def __init__(self, *kargs, **kwargs):
-        Widget.__init__(self, *kargs, **kwargs)
+        FloatLayout.__init__(self, *kargs, **kwargs)
         
         # Bind the keyboard
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
@@ -35,9 +36,37 @@ class DogfightGame(Widget, ConnectionListener):
         }
         self.old_controls = dict(self.controls)
         
+        # Screen objects
+        self.space = FloatLayout()
+        
+        self.hud = FloatLayout(size_hint=(1, 1))
+        center_width = Window.width / 2.0
+        
+        health_label = Label(
+            text='Health',
+            pos_hint={
+                'top': 1.4,
+                'center_x': 0.5,
+            }
+        )
+        self.hud.add_widget(health_label)
+        
+        self.health = ProgressBar(
+            pos_hint={
+                'top': 1,
+                'center_x': 0.5,
+            },
+            size_hint=(0.5, 0.1)
+        )
+        self.hud.add_widget(self.health)
+        
+        self.add_widget(self.hud)
+        self.add_widget(self.space)
+        
         # Objects to display
         self.objects = {}
         self.player_id = None
+        
         
         # Debug Object
         if DEBUG:
@@ -82,7 +111,7 @@ class DogfightGame(Widget, ConnectionListener):
             print 'Game Window:', data
     
     # Game Logic
-    def update(self, fps):
+    def update(self, delta_time):
         "Update all the objects on the screen"
         # Send any new controls to the server.
         self.send_action({'action': 'player'})
@@ -93,7 +122,7 @@ class DogfightGame(Widget, ConnectionListener):
         objects = self.objects
         for i in objects:
             obj = objects[i]
-            obj.update(fps)
+            obj.update(delta_time)
         
         if self.player_id:
             x, y = self.objects[self.player_id].true_pos
@@ -210,15 +239,15 @@ class GenericObject(Image):
     angle = NumericProperty(0)
     source = StringProperty('images/player.png')
     
-    def update(self, fps):
+    def update(self, delta_time):
         "Update the screen based on velocities sent by the server."
         pos = self.true_pos
         angle = self.angle
         
         # Create updated values
-        new_x = pos[0] + (self.vel_x * fps)
-        new_y = pos[1] + (self.vel_y * fps)
-        new_angle = angle + (self.vel_angle * fps)
+        new_x = pos[0] + (self.vel_x * delta_time)
+        new_y = pos[1] + (self.vel_y * delta_time)
+        new_angle = angle + (self.vel_angle * delta_time)
         
         # Update the variables
         self.true_pos = (new_x, new_y)
@@ -265,8 +294,9 @@ class DogfightApp(App, ConnectionListener):
         
         self.count = 0
         self.time = 0
+        
     
-    def update(self, data):
+    def update(self, delta_time):
         "Check for new updates from server and tell the game to update."
         # How many times update() is truly called per second.
         if self.time != round(time()):
@@ -279,13 +309,11 @@ class DogfightApp(App, ConnectionListener):
         self.count += 1
         # End counter. This section can be removed.
         
-        fps = data
-        
         if self.connected:
             connection.Pump()
             self.Pump()
         
-        self.game.update(fps)
+        self.game.update(delta_time)
     
     def Network_connected(self, data):
         print 'Connected to the server!'
@@ -304,10 +332,9 @@ class DogfightApp(App, ConnectionListener):
             print 'Game App:', data
     
     def build(self):
-        "Set up the update speed and initialize the game"
+        "Return self.game as the main widget."
         Clock.schedule_interval(self.update, 1.0 / FPS)
         self.game = DogfightGame()
-        
         return self.game
 
 
