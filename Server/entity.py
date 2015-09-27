@@ -103,15 +103,15 @@ class Entity(object):
         "Update ship position and direction"
         controls = self.controls
         accel = self.accel * delta_time
-        angle = self.angle + 90 # 0 is up.
+        angle = self.angle
         
         if self.old_angle != angle:
             self.old_angle = angle
             temp_vx = 0
             temp_vy = 0
             while abs(temp_vx) + abs(temp_vy) < self.max_speed:
-                temp_vx += cos(radians(angle)) * accel
-                temp_vy += sin(radians(angle)) * accel
+                temp_vx += sin(radians(angle)) * accel
+                temp_vy += cos(radians(angle)) * accel
             
             self.max_x = temp_vx
             self.max_y = temp_vy
@@ -122,8 +122,8 @@ class Entity(object):
         if controls['thrust'] == 1:
             # Calculate what the future velocities will be. If they are greater
             # than the max speeds calculated earlier, ignore it.
-            future_x = self.vel_x + cos(radians(angle)) * accel
-            future_y = self.vel_y + sin(radians(angle)) * accel
+            future_x = self.vel_x + sin(radians(angle)) * accel
+            future_y = self.vel_y + cos(radians(angle)) * accel
             
             if (future_y < max_y) if max_y > 0 else (future_y > max_y):
                 self.vel_y = future_y
@@ -132,10 +132,10 @@ class Entity(object):
                 self.vel_x = future_x
         
         if controls['turning'] == 1:
-            self.vel_angle = self.turn_rate
+            self.vel_angle = self.turn_rate * -1
         
         elif controls['turning'] == 2:
-            self.vel_angle = self.turn_rate * -1
+            self.vel_angle = self.turn_rate
         
         else:
             self.vel_angle = 0
@@ -148,6 +148,9 @@ class Entity(object):
         new_angle = self.angle + (self.vel_angle * delta_time)
         if new_angle < 0:
             new_angle += 360
+        elif new_angle > 360:
+            new_angle -= 360
+            
         self.rotate(new_angle)
         
         self.speed = abs(self.vel_x) + abs(self.vel_y)

@@ -36,11 +36,8 @@ class DogfightGame(FloatLayout, ConnectionListener):
         }
         self.old_controls = dict(self.controls)
         
-        # Screen objects
-        self.space = FloatLayout()
-        
         self.hud = FloatLayout(size_hint=(1, 1))
-        center_width = Window.width / 2.0
+        self.add_widget(self.hud)
         
         health_label = Label(
             text='Health',
@@ -60,7 +57,8 @@ class DogfightGame(FloatLayout, ConnectionListener):
         )
         self.hud.add_widget(self.health)
         
-        self.add_widget(self.hud)
+        # Screen objects
+        self.space = FloatLayout()
         self.add_widget(self.space)
         
         # Objects to display
@@ -167,6 +165,7 @@ class DogfightGame(FloatLayout, ConnectionListener):
         # Create the new object and update it with the data.
         new_object = GenericObject(source=image)
         new_object.update_data(data)
+        print data
         
         # Add it to the display.
         self.objects[object_id] = new_object

@@ -9,12 +9,12 @@
         
 
 <GenericObject>:
-    source: root.source
+    source: self.source
     canvas.before:
         PushMatrix
         Rotate:
-            angle: root.angle
+            angle: self.angle * -1
             axis: 0, 0, 1
-            origin: root.center
+            origin: self.center
     canvas.after:
         PopMatrix
