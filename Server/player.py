@@ -8,6 +8,10 @@ class Player(Entity):
     def __init__(self, functions):
         Entity.__init__(self, functions)
         self.max_health = 10
+        self.turn_rate = 180 # Degrees per second
+        self.accel = 50
+        self.max_speed = 150
+        
         self.health = self.max_health
         self.ignore_list = []
         
@@ -90,7 +94,9 @@ class Player(Entity):
             weapon.pos_x = self.pos_x
             weapon.pos_y = self.pos_y
             weapon.angle = self.angle
-            weapon.max_speed = 100 + self.speed
+            weapon.accel = 100
+            weapon.max_speed = 200 + self.speed
+            weapon.max_life = 0.1
             weapon.controls['thrust'] = 1
             self.ignore_list.append(weapon.polygon)
             

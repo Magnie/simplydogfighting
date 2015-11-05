@@ -8,7 +8,7 @@ class Weapon(Entity):
         Entity.__init__(self, functions)
         self.type = 'bullet'
         self.damage = 2
-        self.max_life = 10
+        self.max_life = 1
         self.life_time = self.max_life
     
     def get_info(self):

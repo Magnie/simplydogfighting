@@ -18,6 +18,8 @@ from time import time
 
 FPS = 30
 DEBUG = False
+HOST = 'scclassroom.com'
+PORT = 34002
 
 class DogfightGame(FloatLayout, ConnectionListener):
     def __init__(self, *kargs, **kwargs):
@@ -114,7 +116,8 @@ class DogfightGame(FloatLayout, ConnectionListener):
         # Send any new controls to the server.
         self.send_action({'action': 'player'})
         self.update_controls()
-        self.Pump()
+        if game.connected:
+            self.Pump()
         
         # Update each object
         objects = self.objects
@@ -142,7 +145,7 @@ class DogfightGame(FloatLayout, ConnectionListener):
         
         # If it is not the player, then tell the object who the player is.
         if self.player_id and self.player_id != object_id:
-            player = self.objects[self.player_id].true_pos
+            player = self.objects[self.player_id]
             self.objects[object_id].new_player(player)
     
     def add_object(self, data):
@@ -164,11 +167,10 @@ class DogfightGame(FloatLayout, ConnectionListener):
         
         # Create the new object and update it with the data.
         new_object = GenericObject(source=image)
-        new_object.update_data(data)
-        print data
+        self.objects[object_id] = new_object
+        self.update_object(data)
         
         # Add it to the display.
-        self.objects[object_id] = new_object
         self.space.add_widget(new_object)
     
     def remove_object(self, object_id):
@@ -271,8 +273,8 @@ class GenericObject(Image):
         if self.player:
             # If the player object is set, set the position relative to the
             # player object
-            new_x = (self.true_pos[0] - self.player[0]) + (Window.width / 2.0)
-            new_y = (self.true_pos[1] - self.player[1]) + (Window.height / 2.0)
+            new_x = (self.true_pos[0] - self.player.true_pos[0]) + (Window.width / 2.0)
+            new_y = (self.true_pos[1] - self.player.true_pos[1]) + (Window.height / 2.0)
             self.center = (new_x, new_y)
         else:
             # If the player object is not set, assume it is the player object
@@ -289,7 +291,7 @@ class DogfightApp(App, ConnectionListener):
     def __init__(self, *kargs, **kwargs):
         App.__init__(self, *kargs, **kwargs)
         self.connected = True
-        self.Connect(('127.0.0.1', 34002))
+        self.Connect((HOST, PORT))
         
         self.count = 0
         self.time = 0

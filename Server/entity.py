@@ -57,11 +57,10 @@ class Entity(object):
         "New collision zone for the object."
         self.polygon = Polygon(poly)
         self.move(self.pos_x, self.pos_y)
-        print 'step four', self, self.polygon
     
     def hit_by(self, other):
         "What to do when hit by another object"
-        print self, 'hit'
+        pass
     
     def test_collision(self, other):
         "Check if a collision with another polygon exists"
