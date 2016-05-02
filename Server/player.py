@@ -18,7 +18,7 @@ class Player(Entity):
         self.type = 'player'
         
         self.live_weapons = []
-        self.weapon_cooldown = 0.5
+        self.weapon_cooldown = 0.4
         self.cooldown = self.weapon_cooldown
         
         self.name = 'Observer'
@@ -31,7 +31,7 @@ class Player(Entity):
     def reset_player(self):
         "Reset the player entity to all default values."
         self.live_weapons = []
-        self.weapon_cooldown = 0.5
+        self.weapon_cooldown = 0.2
         self.cooldown = self.weapon_cooldown
         self.vel_x = 0
         self.vel_y = 0
@@ -95,14 +95,14 @@ class Player(Entity):
             weapon.pos_y = self.pos_y
             weapon.angle = self.angle
             weapon.accel = 100
-            weapon.max_speed = 200 + self.speed
-            weapon.max_life = 0.1
+            weapon.max_speed = 300 + self.speed
+            weapon.max_life = 0.3
             weapon.controls['thrust'] = 1
             self.ignore_list.append(weapon.polygon)
             
             self.functions['add_entity'](weapon, etype='collider')
         
         else:
-            self.cooldown -= self.weapon_cooldown * delta_time
+            self.cooldown -= delta_time
             
         return Entity.update(self, delta_time)

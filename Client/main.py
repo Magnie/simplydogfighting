@@ -18,7 +18,8 @@ from time import time
 
 FPS = 30
 DEBUG = False
-HOST = 'scclassroom.com'
+# HOST = 'scclassroom.com'
+HOST = '127.0.0.1'
 PORT = 34002
 
 class DogfightGame(FloatLayout, ConnectionListener):
@@ -154,7 +155,7 @@ class DogfightGame(FloatLayout, ConnectionListener):
         
         # Image for each type of entity
         if data['type'] == 'player':
-            image = 'images/player.png'
+            image = 'images/playerS.png'
             
         elif data['type'] == 'bullet':
             image = 'images/weapon.png'
@@ -288,8 +289,8 @@ class GenericObject(Image):
 
 class DogfightApp(App, ConnectionListener):
     
-    def __init__(self, *kargs, **kwargs):
-        App.__init__(self, *kargs, **kwargs)
+    def __init__(self):
+        App.__init__(self)
         self.connected = True
         self.Connect((HOST, PORT))
         
@@ -319,6 +320,10 @@ class DogfightApp(App, ConnectionListener):
     def Network_connected(self, data):
         print 'Connected to the server!'
         self.connected = True
+        self.Send({
+            'action': 'collide',
+            'size': [(0, 0), (40.5, 144), (81, 0)]
+        })
     
     def Network_disconnected(self, data):
         print 'Disconnected from the server!'

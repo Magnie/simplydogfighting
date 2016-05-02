@@ -48,11 +48,11 @@ class ClientChannel(Channel):
             size = data['size']
             
             # Generic Box
-            if type(size, int) and size >= 10:
-                self.new_collide_size(size)
+            if type(size) == int and size >= 10:
+                self.player.new_collide_size(size)
             
             # TODO: Support for more intricate polygons
-            if type(size, list) and len(size) >= 3:
+            if type(size) == list and len(size) >= 3:
                 def distance((ax, ay), (bx, by)):
                     return ((ax ** 2) - (bx ** 2)) + ((ay ** 2) - (by ** 2))
                 
@@ -71,7 +71,7 @@ class ClientChannel(Channel):
                     last_i = i
                 
                 if perimeter > 30:
-                    self.new_polygon(size)
+                    self.player.new_polygon(size)
     
     def Network_controls(self, data):
         if 'controls' in data:
@@ -178,34 +178,40 @@ class DFServer(Server):
 
 
 running = True
-server = DFServer(localaddr=('127.0.0.1', 34002))
+server = DFServer(localaddr=('', 34002))
 dyn_fps = FPS
 real_fps = lambda x: 1.0 / x
 frame_time = real_fps(dyn_fps)
+last_time = 0
 while running:
+    # Set server to idle mode if no players are connected.
     if (len(server.clients) == 0):
-        dyn_fps = 10
+        dyn_fps = 5
     
-    current_time = time()
+    currentTime = time()
+    frame_time = currentTime - last_time
+    last_time = currentTime
     # Tick Update
     server.Pump()
-    server.tick(frame_time)
+    server.tick(frame_time)                
+    
+    
     #Simulate server lag:
     #sleep(0.2) # 200MS! Ridiculous!
     
-    time_taken = time() - current_time
+    time_taken = time() - currentTime
     time_left = real_fps(dyn_fps) - time_taken
+    # print frame_time, time_taken, time_left
     
-    # If lagging behind, adjust FPS to handle the load.
     if time_left < 0:
+        # If lagging behind, adjust FPS to handle the load.
         dyn_fps -= 0.5
-        frame_time = real_fps(dyn_fps) + abs(time_left)
-        print 'Warning, lagging:', frame_time
+        print 'Warning, lagging:', time_left
         continue
     
     else:
+        # Slowly increase the FPS until it reaches the max FPS.
         if dyn_fps < FPS:
-            dyn_fps += 0.5
-            frame_time = real_fps(dyn_fps)
-
-    sleep(time_left)
+            dyn_fps += 0.1
+        
+        sleep(time_left)
